@@ -1,0 +1,38 @@
+# Build outputs
+MonBright.app/
+MonBright.icns
+MonBright.dmg
+Icon.iconset/
+
+# macOS junk
+.DS_Store
+**/.DS_Store
+._*
+.AppleDouble
+.LSOverride
+
+# Swift / Xcode
+*.dSYM
+*.swiftdoc
+*.swiftmodule
+.build/
+DerivedData/
+
+# Editor scratch
+.vscode/
+.idea/
+*.swp
+*~
+.history/
+
+# Local config / secrets (just in case)
+.env
+.env.*
+*.local
+*.pem
+*.key
+secrets/
+credentials/
+
+# Runtime diagnostic logs
+*.log

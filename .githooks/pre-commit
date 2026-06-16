@@ -1,0 +1,54 @@
+#!/bin/bash
+#
+# Safety-net pre-commit hook.
+# Blocks commits that would introduce work-affiliated identity or content.
+# Activate with: git config core.hooksPath .githooks
+#
+
+set -e
+
+AUTHOR_EMAIL="$(git config user.email 2>/dev/null || true)"
+AUTHOR_NAME="$(git config user.name 2>/dev/null || true)"
+
+fail() {
+    echo ""
+    echo "  ✘ pre-commit refused:"
+    echo "    $1"
+    echo ""
+    if [ -n "$2" ]; then
+        echo "  Fix:"
+        echo "    $2"
+        echo ""
+    fi
+    echo "  (override with --no-verify only if you're absolutely sure)"
+    echo ""
+    exit 1
+}
+
+# 1. Author identity check
+if echo "$AUTHOR_EMAIL" | grep -qiE '(nielseniq\.com|@niq\b)'; then
+    fail "author email contains work domain: $AUTHOR_EMAIL" \
+         "git config user.email \"78035669+kalyannarayanan@users.noreply.github.com\""
+fi
+
+if echo "$AUTHOR_NAME" | grep -qiE '_niq\b'; then
+    fail "author name contains _niq suffix: $AUTHOR_NAME" \
+         "git config user.name \"kalyannarayanan\""
+fi
+
+# 2. Staged content check — looks at additions in the diff only.
+# Exclude .githooks/ so the hook's own pattern strings don't false-positive.
+STAGED_LEAKS="$(git diff --cached --no-color -- ':!.githooks/' | grep -E '^\+' | grep -iE '(nielseniq|kalyan\.narayanan|naka5002|@niq\b|Kalyan-Narayanan_niq)' || true)"
+if [ -n "$STAGED_LEAKS" ]; then
+    echo ""
+    echo "  ✘ pre-commit refused:"
+    echo "    staged content contains NIQ-affiliated strings:"
+    echo ""
+    echo "$STAGED_LEAKS" | head -5 | sed 's/^/      /'
+    echo ""
+    echo "  Remove the offending strings or unstage the affected files."
+    echo ""
+    exit 1
+fi
+
+exit 0

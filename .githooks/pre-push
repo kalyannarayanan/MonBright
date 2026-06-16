@@ -1,0 +1,63 @@
+#!/bin/bash
+#
+# Safety-net pre-push hook.
+# Blocks any push whose commit range contains work-affiliated identity
+# or content. Defense in depth — catches anything that slipped past
+# pre-commit (e.g. a commit made with --no-verify, or imported from
+# a clone with no hooks).
+#
+# Activate with: git config core.hooksPath .githooks
+#
+
+set -e
+
+ZERO="0000000000000000000000000000000000000000"
+
+while read local_ref local_sha remote_ref remote_sha; do
+    # Deletion (local_sha is zero) — nothing to scan
+    if [ "$local_sha" = "$ZERO" ]; then
+        continue
+    fi
+
+    # Scan everything reachable from local_sha that's not already on
+    # the remote, EXCEPT when force-pushing a rewritten history (where
+    # remote_sha is the OLD upstream that no longer exists locally
+    # after filter-repo). In that case fall back to scanning all of
+    # local_sha's ancestry.
+    if [ "$remote_sha" = "$ZERO" ] || ! git cat-file -e "$remote_sha" 2>/dev/null; then
+        EXCLUDE="$(git for-each-ref --format='^%(refname)' refs/remotes/ | tr '\n' ' ')"
+        commits="$(git rev-list $local_sha $EXCLUDE 2>/dev/null || git rev-list $local_sha)"
+    else
+        commits="$(git rev-list "$remote_sha..$local_sha")"
+    fi
+
+    [ -z "$commits" ] && continue
+
+    # Check author + committer identity on every commit in the range.
+    BAD_IDENT=$(echo "$commits" | xargs -I {} git show -s --format='%H %an <%ae> | %cn <%ce>' {} | grep -iE '(nielseniq\.com|@niq\b|_niq\b)' || true)
+    if [ -n "$BAD_IDENT" ]; then
+        echo ""
+        echo "  ✘ pre-push refused:"
+        echo "    commits in this push have NIQ identity:"
+        echo ""
+        echo "$BAD_IDENT" | head -5 | sed 's/^/      /'
+        echo ""
+        echo "  Rewrite history with git-filter-repo before pushing."
+        echo ""
+        exit 1
+    fi
+
+    # Check commit messages.
+    BAD_MSG=$(echo "$commits" | xargs -I {} git log -1 --format='%H %s%n%b' {} | grep -iE '(nielseniq|kalyan\.narayanan|naka5002|@niq\b)' || true)
+    if [ -n "$BAD_MSG" ]; then
+        echo ""
+        echo "  ✘ pre-push refused:"
+        echo "    commit messages reference NIQ:"
+        echo ""
+        echo "$BAD_MSG" | head -5 | sed 's/^/      /'
+        echo ""
+        exit 1
+    fi
+done
+
+exit 0
