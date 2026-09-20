@@ -101,6 +101,18 @@ If you don't already have Apple's developer tools, the `git` command will pop up
 
 Your settings are remembered for each monitor separately, so brightness levels stay put when you reboot, unplug a monitor, or plug it into a different cable port.
 
+### Darker than your monitor's minimum
+
+Turn an external monitor's own brightness all the way down and it's usually still brighter than you want at night. That's not a bug in the monitor — a monitor's "0" means *the dimmest its backlight goes*, not *off*, and on a typical panel that's still bright enough to read a white page by in a dark room.
+
+The bottom third of MonBright's slider goes past that. Down there the monitor is already at its floor, so MonBright dims the picture itself instead, which gets you meaningfully darker than the buttons on the back of the monitor can. The tradeoff is that very dark shades start blending together, so use it when you want a dark screen rather than for color work.
+
+A few details worth knowing:
+
+- **It's invisible to screenshots and screen sharing.** Your screen looks dim to you, but a screenshot — or what your team sees when you share on a call — looks completely normal.
+- **Quitting MonBright always undoes it.** The dimming lives in the running app, so if anything ever looks wrong, quitting restores your display immediately.
+- **Some monitors only get the regular range.** If MonBright can't identify a monitor reliably (or you have several plugged in and one of them is ambiguous), that monitor gets the normal brightness range instead, with no dead spot in the slider.
+
 ## How to uninstall
 
 **If you installed from the DMG:**
