@@ -57,10 +57,16 @@ namespace MonBright
 
         private const int MinWriteIntervalMs = 25;
 
+        // Software dimming below the DDC floor - externals only. Built-in
+        // panels already dim genuinely dark through WMI, so an overlay there
+        // would only cost shadow detail. See Curve.cs and DimOverlay.cs.
+        private readonly DimOverlay _overlay;
+
         public MonitorModel(DisplayInfo display)
         {
             Display = display;
             _ui = SynchronizationContext.Current ?? new SynchronizationContext();
+            if (!display.IsInternal) _overlay = new DimOverlay(display.Bounds);
 
             // Known-unusable displays say so the moment the panel opens, rather
             // than looking fine until the user drags a slider that does nothing.
@@ -118,7 +124,9 @@ namespace MonBright
 
                 _ui.Post(delegate
                 {
-                    if (read) Set(current, false);
+                    // The hardware reports a raw DDC percent; for externals the
+                    // slider spans hardware plus software range, so map it.
+                    if (read) Set(Display.IsInternal ? current : Curve.SliderForDdc(current), false);
                     if (restoreTo.HasValue) Set(restoreTo.Value, true);
                     else if (!read) Set(_brightness, false);
                 }, null);
@@ -166,9 +174,24 @@ namespace MonBright
                 bool ok;
                 try
                 {
-                    ok = Display.IsInternal
-                        ? WmiBrightness.Write(Display.WmiInstanceName, value)
-                        : Display.HasDdc && Ddc.Write(Display.PhysicalHandle, _range, value);
+                    if (Display.IsInternal)
+                    {
+                        ok = WmiBrightness.Write(Display.WmiInstanceName, value);
+                    }
+                    else
+                    {
+                        // One slider, two mechanisms: hardware down to its floor,
+                        // then the overlay takes over. Overlay failure never marks
+                        // the monitor unavailable - hardware control still works.
+                        int ddc; double scale;
+                        Curve.Split(value, out ddc, out scale);
+                        ok = Display.HasDdc && Ddc.Write(Display.PhysicalHandle, _range, ddc);
+                        if (_overlay != null)
+                        {
+                            double s = scale;
+                            _ui.Post(delegate { _overlay.SetScale(s); }, null);
+                        }
+                    }
                 }
                 catch (Exception ex)
                 {
@@ -202,6 +225,9 @@ namespace MonBright
             try { _worker.Join(400); }
             catch (Exception) { }
             _signal.Close();
+            // Rescan disposes and recreates models on display changes, so the
+            // overlay comes back with fresh bounds; here it just has to go away.
+            if (_overlay != null && !_overlay.IsDisposed) _overlay.Dispose();
         }
     }
 }

@@ -151,6 +151,20 @@ namespace MonBright
             set { Set("firstRunDone", value ? "1" : "0"); }
         }
 
+        /// <summary>
+        /// This monitor's stored brightness is on the slider scale that includes
+        /// software dimming (see Curve.cs), not the raw DDC percent 1.0.0 stored.
+        /// </summary>
+        public static bool SubZeroMigrated(string monitorId)
+        {
+            return Get("subzero.v1." + monitorId, "0") != "0";
+        }
+
+        public static void MarkSubZeroMigrated(string monitorId)
+        {
+            Set("subzero.v1." + monitorId, "1");
+        }
+
         public static int Step
         {
             get

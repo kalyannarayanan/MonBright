@@ -16,6 +16,16 @@ namespace MonBright
         [STAThread]
         private static void Main()
         {
+            // MonBright.exe --selftest : check the brightness curve and exit.
+            foreach (string arg in Environment.GetCommandLineArgs())
+            {
+                if (arg == "--selftest")
+                {
+                    Curve.SelfTest();
+                    return;
+                }
+            }
+
             bool createdNew;
             using (var mutex = new Mutex(true, MutexName, out createdNew))
             {

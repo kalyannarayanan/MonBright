@@ -195,5 +195,19 @@ namespace MonBright
         internal static extern int PrivateExtractIcons(
             string file, int index, int cx, int cy,
             IntPtr[] icons, IntPtr[] ids, int count, uint flags);
+
+        // ---- Dim overlay (DimOverlay.cs) ---------------------------------
+
+        internal const int WS_EX_TOPMOST     = 0x00000008;
+        internal const int WS_EX_TRANSPARENT = 0x00000020;
+        internal const int WS_EX_TOOLWINDOW  = 0x00000080;
+        internal const int WS_EX_LAYERED     = 0x00080000;
+        internal const int WS_EX_NOACTIVATE  = 0x08000000;
+
+        /// <summary>Keep a window out of screenshots and screen sharing. Windows 10 2004+.</summary>
+        internal const uint WDA_EXCLUDEFROMCAPTURE = 0x00000011;
+
+        [DllImport("user32.dll", SetLastError = true)]
+        internal static extern bool SetWindowDisplayAffinity(IntPtr hWnd, uint affinity);
     }
 }

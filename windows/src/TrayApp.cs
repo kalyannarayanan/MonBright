@@ -382,6 +382,18 @@ namespace MonBright
             {
                 var model = new MonitorModel(d);
 
+                // 1.0.0 stored a raw DDC percent. The slider now spans hardware
+                // plus software range, so the same number reads dimmer - remap
+                // once per external monitor so upgrading doesn't darken anyone's
+                // screen. Marked even when nothing is stored, so a value written
+                // later on the new scale is never remapped a second time.
+                if (!d.IsInternal && !Settings.SubZeroMigrated(d.Id))
+                {
+                    int? old = Settings.GetBrightness(d.Id);
+                    if (old.HasValue) Settings.SetBrightness(d.Id, Curve.SliderForDdc(old.Value));
+                    Settings.MarkSubZeroMigrated(d.Id);
+                }
+
                 int? restore = null;
                 if (Settings.RestoreOnStart)
                 {

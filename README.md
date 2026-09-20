@@ -9,7 +9,7 @@ A brightness slider for your external monitors, living in the menu bar (Mac) or 
 
 Each folder has its own README with install steps, usage, and the "is this safe?" walkthrough.
 
-The macOS build also dims **below** a monitor's hardware minimum by scaling the display's gamma ramp — useful at night when the panel's own "0" is still bright. Details in the [macOS README](macos/README.md#darker-than-your-monitors-minimum). The Windows build doesn't do this yet.
+Both builds also dim **below** a monitor's hardware minimum — useful at night when the panel's own "0" is still bright. The bottom third of the slider pins the hardware at its floor and dims the picture itself, with the same curve on both platforms. Details: [macOS](macos/README.md#darker-than-your-monitors-minimum) · [Windows](windows/README.md#darker-than-your-monitors-minimum).
 
 ## License
 

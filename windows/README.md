@@ -88,6 +88,34 @@ nothing.
 Brightness is remembered per monitor, so levels stay put when you reboot,
 unplug a monitor, or plug it into a different port.
 
+### Darker than your monitor's minimum
+
+Turn an external monitor's own brightness all the way down and it's usually
+still brighter than you want at night. That's not a bug in the monitor — a
+monitor's "0" means *the dimmest its backlight goes*, not *off*, and on a
+typical panel that's still bright enough to read a white page by in a dark
+room.
+
+The bottom third of MonBright's slider goes past that. Down there the monitor
+is already at its floor, so MonBright dims the picture itself instead, which
+gets you meaningfully darker than the buttons on the back of the monitor can.
+The tradeoff is that very dark shades start blending together, so use it when
+you want a dark screen rather than for colour work.
+
+A few details worth knowing:
+
+- **It's invisible to screenshots and screen sharing.** Your screen looks dim
+  to you, but a screenshot — or what your team sees when you share on a call —
+  looks completely normal. (Windows 10 version 2004 or later; on older builds
+  the dimming still works but does show up in captures.)
+- **Quitting MonBright always undoes it.** The dimming is a window MonBright
+  owns, so if anything ever looks wrong, quitting restores your display
+  immediately.
+- **Night Light is left alone.** MonBright doesn't touch the colour settings
+  Night Light uses, so the two work together.
+- **Laptop screens get the regular range.** Built-in panels already dim
+  genuinely dark on their own, so this only applies to external monitors.
+
 ## How to uninstall
 
 1. Right-click the icon → **Quit MonBright**.
