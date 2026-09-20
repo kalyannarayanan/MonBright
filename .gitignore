@@ -36,3 +36,14 @@ credentials/
 
 # Runtime diagnostic logs
 *.log
+
+# Windows build output (windows/)
+bin/
+dist/
+*.exe
+*.pdb
+*.ico
+.vs/
+*.user
+Thumbs.db
+desktop.ini

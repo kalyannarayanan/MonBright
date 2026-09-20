@@ -84,7 +84,7 @@ If you've installed developer tools before, this path skips the macOS warning en
 
 ```sh
 git clone https://github.com/kalyannarayanan/MonBright.git
-cd MonBright
+cd MonBright/macos
 ./build.sh && ./install.sh
 ```
 
