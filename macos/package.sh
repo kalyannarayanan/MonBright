@@ -56,13 +56,20 @@ TXT
 rm -f "$DMG_PATH"
 
 echo "Building $DMG_PATH..."
-hdiutil create \
-    -volname "$VOL_NAME" \
-    -srcfolder "$STAGE" \
-    -ov \
-    -format UDZO \
-    -fs HFS+ \
-    "$DMG_PATH" >/dev/null
+# Two steps instead of `hdiutil create -srcfolder`: that form attaches a
+# scratch image internally, and managed Macs often block mounting disk
+# images outright ("no mountable file systems"). makehybrid writes the
+# filesystem directly from the folder, and convert compresses it, so this
+# never needs to mount anything.
+HYBRID="$STAGE/.hybrid.dmg"
+hdiutil makehybrid \
+    -o "$HYBRID" \
+    "$STAGE" \
+    -hfs \
+    -hfs-volume-name "$VOL_NAME" \
+    -default-volume-name "$VOL_NAME" >/dev/null
+hdiutil convert "$HYBRID" -format UDZO -o "$DMG_PATH" >/dev/null
+rm -f "$HYBRID"
 
 SIZE="$(du -h "$DMG_PATH" | cut -f1)"
 echo
