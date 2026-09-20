@@ -34,6 +34,15 @@ func IOAVServiceWriteI2C(
     _ inputBufferSize: UInt32
 ) -> kern_return_t
 
+@_silgen_name("IOAVServiceReadI2C")
+func IOAVServiceReadI2C(
+    _ service: AnyObject,
+    _ chipAddress: UInt32,
+    _ offset: UInt32,
+    _ outputBuffer: UnsafeMutableRawPointer,
+    _ outputBufferSize: UInt32
+) -> kern_return_t
+
 @_silgen_name("IOAVServiceCopyEDID")
 func IOAVServiceCopyEDID(
     _ service: AnyObject,
@@ -133,14 +142,50 @@ func findBuiltinDisplay() -> CGDirectDisplayID? {
     return nil
 }
 
+// Ask the monitor what its luminance range tops out at. Monitors are not all
+// 0-100: some report 0-255, and a fixed 100 would only ever reach ~39% of
+// those. DDC "Get VCP Feature" for 0x10 replies with max and current;
+// we only need max. Returns nil if the monitor doesn't answer sensibly.
+func readLuminanceMax(_ av: AnyObject) -> UInt16? {
+    var req: [UInt8] = [0x82, 0x01, 0x10, 0]
+    var chk: UInt8 = 0x6E ^ 0x51
+    for i in 0..<3 { chk ^= req[i] }
+    req[3] = chk
+
+    for attempt in 0..<2 {
+        let wrote = req.withUnsafeBufferPointer { buf -> kern_return_t in
+            IOAVServiceWriteI2C(av, 0x37, 0x51, buf.baseAddress!, UInt32(buf.count))
+        }
+        guard wrote == KERN_SUCCESS else { continue }
+        // DDC/CI gives the monitor 40 ms to prepare its reply.
+        usleep(40_000)
+
+        var reply = [UInt8](repeating: 0, count: 11)
+        let read = reply.withUnsafeMutableBufferPointer { buf -> kern_return_t in
+            IOAVServiceReadI2C(av, 0x37, 0x51, buf.baseAddress!, UInt32(buf.count))
+        }
+        // [0]=src [1]=0x88 len [2]=0x02 reply [3]=result [4]=vcp [5]=type [6..7]=max [8..9]=cur [10]=chk
+        if read == KERN_SUCCESS, reply[1] == 0x88, reply[2] == 0x02, reply[3] == 0x00, reply[4] == 0x10 {
+            let maxValue = (UInt16(reply[6]) << 8) | UInt16(reply[7])
+            if maxValue > 0 { return maxValue }
+        }
+        if attempt == 0 { usleep(20_000) }
+    }
+    return nil
+}
+
 func writeExternalBrightness(_ av: AnyObject, value: Int) -> kern_return_t {
-    let clamped = UInt16(max(0, min(100, value)))
+    let percent = max(0, min(100, value))
+    // Scale to the monitor's own range; fall back to 0-100 if it won't tell us,
+    // which is exactly what every write did before this existed.
+    let top = readLuminanceMax(av) ?? 100
+    let raw = UInt16((Double(percent) / 100.0 * Double(top)).rounded())
     var data: [UInt8] = [
         0x84,
         0x03,
         0x10,
-        UInt8((clamped >> 8) & 0xFF),
-        UInt8(clamped & 0xFF),
+        UInt8((raw >> 8) & 0xFF),
+        UInt8(raw & 0xFF),
         0
     ]
     var chk: UInt8 = 0x6E ^ 0x51
